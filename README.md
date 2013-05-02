@@ -1,7 +1,5 @@
-modmailpro
-==========
-
 Mod Mail Pro
+==========
 
 Features:
 
@@ -10,6 +8,7 @@ Features:
 - Unread count
 - Unread highlighting
 - Replaces spam/removed mod mail (red mod mail) with red header.
+- Reply count in titles. 
 
 To filter subreddits, edit this following line:
 
