@@ -24,6 +24,9 @@ function modmailfilter() {
     // Enter the subs below
     //
     var filtersubs = ["funny", "wtf", "SRDBroke"];
+    filtersubs = $.map(filtersubs, function(e) {
+       return e.toLowerCase(); 
+    });
     
     if (location.pathname.match(/\/message\/(?:moderator)\/?/)) {
 
@@ -76,7 +79,7 @@ function modmailfilter() {
 
         // filter messages from matching subs
         $('.message-parent').each(function () {
-            var subname = $(this).find('.correspondent a').text().replace('/r/', '').replace('[-]', '').replace('[+]', '').trim();
+            var subname = $(this).find('.correspondent a').text().replace('/r/', '').replace('[-]', '').replace('[+]', '').trim().toLowerCase();
 
             if ($.inArray(subname, filtersubs) != -1) {
                 $(this).css('display', state);
