@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Mod Mail Pro
-// @namespace  reddit.com/r/agentlame
+// @namespace    reddit.com/r/agentlame
 // @author	agentlame, creesch, DEADB33F, gavin19
 // @description	Filter subs from mod mail.
 // @match	http://*.reddit.com/message/moderator
@@ -23,7 +23,7 @@ function modmailfilter() {
     //
     // Enter the subs below
     //
-    var filtersubs = ["funny", "wtf", "SRDBroke"];
+    var filtersubs = ["SillyBot", "SRDBroke", "TheBluePill", "SRSsucksORstormfront", "CircleCabal", "unlimitedsoupandsalad"];
 
     if (location.pathname.match(/\/message\/(?:moderator)\/?/)) {
 
@@ -148,6 +148,12 @@ function collapsethreads() {
 
     $('.message-parent').each(function () {
         $(this).find('.correspondent a').parent().prepend('<a href="javascript:;" class="collapse-link">[-]</a> ');
+        //$('.message-parent').each(function () {
+        var count = $(this).find('.entry').length - 1;
+
+        if (count > 0) {
+            $('<span>[' + count + '] </span>').insertAfter($(this).find('.correspondent:first'));
+        }
     });
 
     $('body').delegate('.collapse-link', 'click', function () {
