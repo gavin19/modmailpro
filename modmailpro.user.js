@@ -23,8 +23,8 @@ function modmailfilter() {
     //
     // Enter the subs below
     //
-    var filtersubs = ["SillyBot", "SRDBroke", "TheBluePill", "SRSsucksORstormfront", "CircleCabal", "unlimitedsoupandsalad"];
-
+    var filtersubs = ["funny", "wtf", "SRDBroke"];
+    
     if (location.pathname.match(/\/message\/(?:moderator)\/?/)) {
 
         // add filter button
