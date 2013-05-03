@@ -24,7 +24,7 @@ var modmailPro = {
     //
     // Enter the subs below
     //
-    filtersubs : ["funny", "wtf", "SRDBroke", "MODclub", "football", "gavin19", "quakenet"],
+    filtersubs : ["funny", "wtf", "SRDBroke", "MODclub"],
 
     go: function() {
         modmailPro.addCSS();
@@ -62,9 +62,6 @@ var modmailPro = {
         });
         // Listen for pages added in with NER
         document.body.addEventListener('DOMNodeInserted', function(e){
-            if (e.target.parentNode.id && e.target.parentNode.id === 'siteTable'){
-                var f = e.target.parentNode.querySelectorAll('.sitetable[id*="siteTable-"]:last-child > .message-parent');
-            }
             if (e.target.parentNode.id && e.target.parentNode.id === 'siteTable'){
                 var e = e.target.parentNode.querySelectorAll('.sitetable[id*="siteTable-"]:last-child > .message-parent');
                 if (document.querySelector('.mmp-collapsed')){
