@@ -36,13 +36,6 @@ var modmailPro = {
         
         // add filter button
         $('<span style="color:gray">  |  </span><a href="javascript:;" class="filter-link">filter</a>').appendTo('.spacer').click(modmailPro.filter);
-
-        // underline on hover.     
-        $(".filter-link").hover(function () {
-            $(this).css('text-decoration', 'underline');
-        }, function () {
-            $(this).css('text-decoration', 'none');
-        });
         
         // Start on 'unread' by default so make that link selected
         $('.menuarea li:first').removeClass('selected').find('a').addClass('all');
@@ -58,6 +51,7 @@ var modmailPro = {
         var css = ".messages-page .message-parent, .messages-page .thing.spam {background-color:transparent!important;}";
         css += ".thing.spam .entry .noncollapsed .tagline .head {\n    color: red !important;\n}";
         css += ".menuarea .spacer .selected{color:orangered;font-weight:bold}";
+        css + ".filter-link:hover{text-decoration:underline}";
         var style = document.createElement('style');
         style.type = "text/css";
         style.appendChild(document.createTextNode(css));
