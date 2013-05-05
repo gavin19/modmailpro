@@ -38,41 +38,62 @@ var modmailPro = {
         $('<span style="color:gray">  |  </span><a href="javascript:;" class="filter-link">filter</a>').appendTo('.spacer').click(modmailPro.filter);
 
         // underline on hover.     
-        $("a.filter-link").hover(function () {
+        $(".filter-link").hover(function () {
             $(this).css('text-decoration', 'underline');
         }, function () {
             $(this).css('text-decoration', 'none');
         });
         
+        // Start on 'unread' by default so make that link selected
+        $('.menuarea li:first').removeClass('selected').find('a').addClass('all');
+        $('.menuarea li:last').addClass('selected').find('a').addClass('unread');
+        
         modmailPro.highlightUnread();
         modmailPro.collapseThreads();
         modmailPro.addListener();
     },
+    mmpFiltered: false,
+    mmpExpanded: true,
     addCSS: function(){
-        var css = ".messages-page .message-parent, .messages-page .thing.spam {\n    background-color:transparent!important;\n}   .thing.spam .entry .noncollapsed .tagline .head {\n    color: red !important;\n}";
+        var css = ".messages-page .message-parent, .messages-page .thing.spam {background-color:transparent!important;}";
+        css += ".thing.spam .entry .noncollapsed .tagline .head {\n    color: red !important;\n}";
+        css += ".menuarea .spacer .selected{color:orangered;font-weight:bold}";
         var style = document.createElement('style');
         style.type = "text/css";
         style.appendChild(document.createTextNode(css));
         document.head.appendChild(style);
     },
     addListener: function() {
-        // Add listener for the 'all' button to cover NER
-        $('.menuarea li:first-child a').on('click', function() {
+        // Listeners for collapse/expand all
+        $('.expand-all-link').click(modmailPro.expandAll);
+        $('.expand-all-link').click(modmailPro.collapseAll);
+
+        // Add listener for the all/unread buttons to replace the default actions
+        $('.all').on('click', function(e) {
+            e.preventDefault();
             $('.message-parent').css('display','');
+            $(this).parent().toggleClass('selected');
+            $('.unread').parent().toggleClass('selected');
         });
+        $('.unread').on('click', function(e) {
+            e.preventDefault();
+            $('.message-parent').css('display','none').has('.entry.new').css('display','');
+            $(this).parent().toggleClass('selected');
+            $('all').parent().toggleClass('selected');
+        });
+        
         // Listen for pages added in with NER
-        document.body.addEventListener('DOMNodeInserted', function(e){
-            if (e.target.parentNode.id && e.target.parentNode.id === 'siteTable'){
+        $('div.content').on('DOMNodeInserted', function(e){
+            if (e.target.parentNode.id && e.target.parentNode.id === 'siteTable' && e.target.className.match(/sitetable/)){
                 var e = e.target.parentNode.querySelectorAll('.sitetable[id*="siteTable-"]:last-child > .message-parent');
-                if (document.querySelector('.mmp-collapsed')){
-                    //modmailPro.collapseAll(e);
+                if (modmailPro.mmpCollapsed){
+                    modmailPro.collapseAll(null, e);
+                } else if (modmailPro.mmpFiltered){
+                    modmailPro.setViewState(e, 'none');
+                }  else if ($('.menuarea li').eq(1).is('.selected')){
+                    $(e).hide();
                 }
-                if (document.querySelector('.mmp-expanded')){
-                    //modmailPro.expandAll(e);
-                }
-                if ($('.menuarea li').eq(1).is('.selected')){
-                    //$(e).hide();
-                }
+                modmailPro.addCollapseButtons(null, e);
             }
         });
     },
@@ -80,16 +101,12 @@ var modmailPro = {
         var $link = $('.filter-link');
 
         // make look selected.
-        $link.css({
-            "color": "orangered",
-            "font-weight": "bold"
-        });
+        $link.addClass('selected');
 
         // Hide threads
         modmailPro.setViewState('none');
         
-        // Add class to body
-        $('body').addClass('mmp-filtered');
+        modmailPro.mmpFiltered = true;
 
         // Rebind filter button
         $link.unbind('click').click(modmailPro.unfilter);
@@ -99,16 +116,12 @@ var modmailPro = {
         var $link = $('.filter-link');
 
         // make look unselected.
-        $link.css({
-            "color": "#369",
-            "font-weight": "normal"
-        });
+        $link.addClass('selected');
 
         // Show threads.
         $('.message-parent').css('display','');
         
-        // Remove class from body
-        $('body').removeClass('mmp-filtered');
+        modmailPro.mmpFiltered = false;
 
         // Rebind filter button.
         $link.unbind('click').click(modmailPro.filter);
@@ -120,7 +133,7 @@ var modmailPro = {
         $links.each(function () {
             var subname = $(this).find('.correspondent a').text().replace('/r/', '').replace('[-]', '').replace('[+]', '').trim().toLowerCase();
             if ($.inArray(subname, modmailPro['filtersubs']) != -1) {
-                $(this).css('display','none');
+                $(this).css('display', state);
             }
         });
     },
@@ -129,9 +142,7 @@ var modmailPro = {
             UNREAD = 1,
             now = new Date().getTime(),
             last = JSON.parse(localStorage['modmail_last_visited']) || {},
-            count = 0,
-            user = reddit.logged,
-            page = localStorage['modmail_page'] || ALL;
+            count = 0;
 
         // Highlight unread messages
         $('.thing.message .entry').each(function () {
@@ -145,15 +156,10 @@ var modmailPro = {
         });
 
         // Display number of unread messages
-        $('.menuarea')
-            .append('<span><b>' + count + '</b> - new message' + (count == 1 ? '' : 's'))
-            .find('a').click(function () {
-            modmailPro.hideOld(this.textContent == 'all' ? 0 : 1);
-            return false;
-        });
+        $('.menuarea').append('<span><b>' + count + '</b> - new message' + (count == 1 ? '' : 's'));
 
         // Hide read messages
-        modmailPro.hideOld(page);
+        modmailPro.hideOld();
 
         // Update last read times
         $('.correspondent.reddit').text(function (_, sr, c) {
@@ -162,13 +168,7 @@ var modmailPro = {
         localStorage['modmail_last_visited'] = JSON.stringify(last);
     },
     hideOld: function(bool) {
-        //console.log('bool:',bool)
-        $('.menuarea li').removeClass('selected').eq(bool).addClass('selected');
-
-        if (bool * 1) $('#siteTable>.message').hide().has('.entry.new').show();
-        else $('#siteTable>.message').show();
-
-        localStorage['modmail_page'] = bool;
+        $('.message-parent').hide().has('.entry.new').show();
     },
     collapseThreads: function() {
         // add collapse button
@@ -180,16 +180,9 @@ var modmailPro = {
             $(this).css('text-decoration', 'none');
         });
 
-        $('.message-parent').each(function () {
-            $(this).find('.correspondent a').parent().prepend('<a href="javascript:;" class="collapse-link">[-]</a> ');
-            var count = $(this).find('.entry').length - 1;
+        modmailPro.addCollapseButtons();
 
-            if (count > 0) {
-                $('<span>[' + count + '] </span>').insertAfter($(this).find('.correspondent:first'));
-            }
-        });
-
-        $('body').delegate('.collapse-link', 'click', function () {
+        $('.collapse-link').on('click', function () {
             var parent = $(this).closest('.message-parent');
             if ($(this).text() === '[-]') {
                 parent.find('.entry, .expand-btn').hide();
@@ -200,55 +193,58 @@ var modmailPro = {
             }
         });
     },
-    collapseAll: function(target) {
+    addCollapseButtons: function(source, target){
+        $links = target ? $(target) : $('.message-parent');
+        
+        $links.each(function () {
+            $(this).find('.correspondent a').parent().prepend('<a href="javascript:;" class="collapse-link">[-]</a> ');
+            var count = $(this).find('.entry').length - 1;
+
+            if (count > 0) {
+                $('<span>[' + count + '] </span>').insertAfter($(this).find('.correspondent:first'));
+            }
+        });
+    },
+    collapseAll: function(source, target) {
         var $link = $('.collapse-all-link'),
             $links = target ? $(target) : $('.message-parent');
         // make look selected.
-        $link.css({
-            "color": "orangered",
-            "font-weight": "bold"
-        });
-
+        $link.toggleClass('selected');
+        
         // Hide threads.
         $links.each(function () {
-            $(this).find('.entry, .expand-btn').hide();
+            $(this).find('.entry, .expand-btn').css('display', 'none');
         });
         
         // Add class to body
-        $('body').addClass('mmp-collapsed');
+        modmailPro.mmpCollapsed = true;
 
-        // Rebind filter button.
-        $link.unbind('click').click(modmailPro.expandAll);
+        $('.expand-all-link').addClass('collapse-all-link').removeClass('expand-all-link');
         $link.text('expand all');
         $('.collapse-link').text('[+]');
     },
-    expandAll: function() {
-        var $link = $('.collapse-all-link');
+    expandAll: function(source, target) {
+        var $link = $('.collapse-all-link'),
+            $links = target ? $(target) : $('.message-parent');
 
         // make look unselected.
-        $link.css({
-            "color": "#369",
-            "font-weight": "normal"
-        });
+        $link.toggleClass('selected');
 
         // Show threads.
-        $('.message-parent').each(function () {
-            $(this).find('.entry, .expand-btn').show();
+        $links.each(function () {
+            $(this).find('.entry, .expand-btn').css('display','');
         });
         
-        // Remove class from body
-        $('body').removeClass('mmp-expanded');
-
-        // Rebind filter button.
-        $link.unbind('click').click(modmailPro.collapseAll);
-        $link.text('collapse all');
+        modmailPro.mmpCollapsed = false;
+        
+        $('.collapse-all-link').addClass('expand-all-link').removeClass('collapse-all-link');
         $('.collapse-link').text('[-]');
     }
 }
 modmailPro.go();
 }
 
-if ( location.pathname.match(/\/message\/(?:moderator)\/?/) ) {
+if ( location.pathname.match(/\/message\/moderator\/$/) ) {
     var scr = document.createElement('script');
     scr.type = "text/javascript";
     scr.textContent = '(' + main.toString() + ')();';
